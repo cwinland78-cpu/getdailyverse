@@ -11,7 +11,9 @@
       "resizeMode": "cover",
       "backgroundColor": "#1a1208"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.thedailyverse.app",
@@ -34,13 +36,17 @@
             }
           }
         },
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
           {
             "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
-            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+            "NSPrivacyAccessedAPITypeReasons": [
+              "CA92.1"
+            ]
           }
         ],
         "NSPrivacyCollectedDataTypes": [],
@@ -60,7 +66,6 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-insights",
       [
         "expo-av",
         {
