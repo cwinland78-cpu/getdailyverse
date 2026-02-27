@@ -60,7 +60,8 @@
       },
       "package": "com.thedailyverse.app",
       "permissions": [
-        "MODIFY_AUDIO_SETTINGS"
+        "MODIFY_AUDIO_SETTINGS",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "plugins": [
@@ -76,11 +77,12 @@
     "scheme": "thedailyverse",
     "extra": {
       "eas": {
-        "projectId": ""
+        "projectId": "67bdf414-1b1a-43f3-9af0-9b946fc2de66"
       },
       "router": {
         "origin": false
       }
-    }
+    },
+    "owner": "cwinland78"
   }
 }
