@@ -1,0 +1,39 @@
+{
+  "name": "the-daily-verse",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo run:ios",
+    "android": "expo run:android",
+    "build:ios": "eas build --platform ios",
+    "submit:ios": "eas submit --platform ios"
+  },
+  "dependencies": {
+    "@expo-google-fonts/cinzel": "^0.2.3",
+    "@expo-google-fonts/dm-sans": "^0.2.3",
+    "@expo-google-fonts/lora": "^0.2.3",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "expo": "~54.0.0",
+    "expo-av": "~15.0.2",
+    "expo-clipboard": "~7.0.1",
+    "expo-font": "~13.3.0",
+    "expo-insights": "^55.0.10",
+    "expo-linking": "~7.0.5",
+    "expo-router": "~4.0.0",
+    "expo-sharing": "~13.0.1",
+    "expo-splash-screen": "~0.29.0",
+    "expo-status-bar": "~2.2.0",
+    "react": "18.3.1",
+    "react-native": "0.76.6",
+    "react-native-safe-area-context": "4.14.1",
+    "react-native-screens": "~4.4.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/react": "~18.3.0",
+    "typescript": "~5.3.3"
+  },
+  "private": true
+}
