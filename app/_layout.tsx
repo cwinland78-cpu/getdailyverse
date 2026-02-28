@@ -25,8 +25,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
+  const [fontTimeout, setFontTimeout] = useState(false);
 
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Cinzel_400Regular,
     Cinzel_600SemiBold,
     Cinzel_700Bold,
@@ -40,20 +41,30 @@ export default function RootLayout() {
 
   useEffect(() => {
     async function prepare() {
-      const onboarded = await isOnboarded();
-      setHasOnboarded(onboarded);
+      try {
+        const onboarded = await isOnboarded();
+        setHasOnboarded(onboarded);
+      } catch (e) {
+        // Continue with default (not onboarded)
+      }
       setAppReady(true);
     }
     prepare();
+
+    // Safety timeout: hide splash after 5 seconds no matter what
+    const timer = setTimeout(() => setFontTimeout(true), 5000);
+    return () => clearTimeout(timer);
   }, []);
 
+  const fontsReady = fontsLoaded || fontError || fontTimeout;
+
   useEffect(() => {
-    if (fontsLoaded && appReady) {
+    if (fontsReady && appReady) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, appReady]);
+  }, [fontsReady, appReady]);
 
-  if (!fontsLoaded || !appReady) return null;
+  if (!fontsReady || !appReady) return null;
 
   return (
     <>
