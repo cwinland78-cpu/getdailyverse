@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -25,7 +26,6 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  const [fontTimeout, setFontTimeout] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Cinzel_400Regular,
@@ -50,24 +50,24 @@ export default function RootLayout() {
       setAppReady(true);
     }
     prepare();
-
-    // Safety timeout: hide splash after 5 seconds no matter what
-    const timer = setTimeout(() => setFontTimeout(true), 5000);
-    return () => clearTimeout(timer);
   }, []);
 
-  const fontsReady = fontsLoaded || fontError || fontTimeout;
+  const fontsReady = fontsLoaded || fontError;
 
-  useEffect(() => {
+  const onLayoutRootView = useCallback(async () => {
     if (fontsReady && appReady) {
-      SplashScreen.hideAsync();
+      await SplashScreen.hideAsync();
     }
   }, [fontsReady, appReady]);
 
-  if (!fontsReady || !appReady) return null;
+  if (!fontsReady || !appReady) {
+    // Render a matching background view instead of null
+    // This ensures the native view hierarchy mounts properly
+    return <View style={styles.loading} onLayout={onLayoutRootView} />;
+  }
 
   return (
-    <>
+    <View style={styles.root} onLayout={onLayoutRootView}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{ headerShown: false }}
@@ -79,6 +79,16 @@ export default function RootLayout() {
         <Stack.Screen name="preferences" />
         <Stack.Screen name="reader" options={{ presentation: 'modal' }} />
       </Stack>
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    backgroundColor: '#1a1208',
+  },
+  root: {
+    flex: 1,
+  },
+});
