@@ -50,6 +50,19 @@ export async function updatePreferences(phone: string, prefs: {
   return res.json();
 }
 
+export async function deleteAccount(phone: string) {
+  try {
+    const res = await fetch(`${FUNCTIONS_URL}/delete-account`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    return res.json();
+  } catch {
+    return { success: false, error: 'Network error' };
+  }
+}
+
 // Direct verse queries (read from the public verses table)
 // All queries accept an optional translation parameter (defaults to 'KJV')
 

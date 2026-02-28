@@ -3,13 +3,15 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   Alert, ActivityIndicator, Linking,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS, TIMEZONES } from '../../src/constants/theme';
-import { getSubscriber, saveSubscriber, SubscriberData } from '../../src/utils/storage';
-import { updatePreferences } from '../../src/utils/supabase';
+import { getSubscriber, saveSubscriber, clearSubscriber, SubscriberData } from '../../src/utils/storage';
+import { updatePreferences, deleteAccount } from '../../src/utils/supabase';
 import { formatDeliveryTime } from '../../src/utils/bible';
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const [subscriber, setSubscriber] = useState<SubscriberData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -20,6 +22,25 @@ export default function SettingsScreen() {
   async function loadSubscriber() {
     const sub = await getSubscriber();
     setSubscriber(sub);
+  }
+
+  async function handleDeleteAccount() {
+    if (!subscriber) return;
+    setLoading(true);
+    try {
+      const result = await deleteAccount(subscriber.phone);
+      if (result.success) {
+        await clearSubscriber();
+        const { setOnboarded } = await import('../../src/utils/storage');
+        await setOnboarded(false);
+        router.replace('/onboarding');
+      } else {
+        Alert.alert('Error', 'Failed to delete account. Please try again or contact support.');
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please contact support@getdailyverse.com');
+    }
+    setLoading(false);
   }
 
   async function updateField(field: string, value: any) {
@@ -177,12 +198,47 @@ export default function SettingsScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.linkRow}
+            onPress={() => Linking.openURL('https://getdailyverse.com/privacy')}
+          >
+            <Text style={styles.linkText}>Privacy Policy</Text>
+            <Text style={styles.linkArrow}>→</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.linkRow}
+            onPress={() => Linking.openURL('https://getdailyverse.com/terms')}
+          >
+            <Text style={styles.linkText}>Terms of Service</Text>
+            <Text style={styles.linkArrow}>→</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.linkRow}
             onPress={() => Linking.openURL('mailto:support@getdailyverse.com')}
           >
             <Text style={styles.linkText}>Contact support</Text>
             <Text style={styles.linkArrow}>→</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Delete Account */}
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          onPress={() => {
+            Alert.alert(
+              'Delete Account',
+              'This will permanently delete your account and stop all daily verse texts. This cannot be undone.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: handleDeleteAccount,
+                },
+              ]
+            );
+          }}
+        >
+          <Text style={styles.deleteText}>Delete My Account</Text>
+        </TouchableOpacity>
 
         {loading && (
           <View style={styles.savingOverlay}>
@@ -278,5 +334,11 @@ const styles = StyleSheet.create({
   version: {
     fontFamily: FONTS.uiRegular, fontSize: 12, color: COLORS.textLight,
     textAlign: 'center', marginTop: SPACING.lg, marginBottom: SPACING.xxl,
+  },
+  deleteBtn: {
+    alignItems: 'center', paddingVertical: 14, marginTop: SPACING.md,
+  },
+  deleteText: {
+    fontFamily: FONTS.uiMedium, fontSize: 14, color: COLORS.error,
   },
 });

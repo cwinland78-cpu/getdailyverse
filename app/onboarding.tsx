@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS } from '../src/constants/theme';
@@ -56,6 +56,16 @@ export default function OnboardingScreen() {
           Standard messaging rates may apply.{'\n'}
           Reply STOP at any time to unsubscribe.
         </Text>
+
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://getdailyverse.com/privacy')}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDot}>·</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://getdailyverse.com/terms')}>
+            <Text style={styles.legalLink}>Terms of Service</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -161,5 +171,23 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  legalLink: {
+    fontFamily: FONTS.uiMedium,
+    fontSize: 11,
+    color: COLORS.primary,
+    textDecorationLine: 'underline',
+  },
+  legalDot: {
+    fontFamily: FONTS.uiRegular,
+    fontSize: 11,
+    color: COLORS.textLight,
   },
 });

@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -26,6 +26,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
+  const [splashHidden, setSplashHidden] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Cinzel_400Regular,
@@ -52,22 +53,32 @@ export default function RootLayout() {
     prepare();
   }, []);
 
+  // Force hide splash after 3 seconds no matter what
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync().catch(() => {});
+      setSplashHidden(true);
+      setAppReady(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const fontsReady = fontsLoaded || fontError;
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsReady && appReady) {
-      await SplashScreen.hideAsync();
+  // Hide splash as soon as everything is ready
+  useEffect(() => {
+    if (fontsReady && appReady && !splashHidden) {
+      SplashScreen.hideAsync().catch(() => {});
+      setSplashHidden(true);
     }
-  }, [fontsReady, appReady]);
+  }, [fontsReady, appReady, splashHidden]);
 
-  if (!fontsReady || !appReady) {
-    // Render a matching background view instead of null
-    // This ensures the native view hierarchy mounts properly
-    return <View style={styles.loading} onLayout={onLayoutRootView} />;
+  if (!splashHidden && !fontsReady && !appReady) {
+    return <View style={{ flex: 1, backgroundColor: '#1a1208' }} />;
   }
 
   return (
-    <View style={styles.root} onLayout={onLayoutRootView}>
+    <View style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{ headerShown: false }}
@@ -82,13 +93,3 @@ export default function RootLayout() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    backgroundColor: '#1a1208',
-  },
-  root: {
-    flex: 1,
-  },
-});
