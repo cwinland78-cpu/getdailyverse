@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.thedailyverse.app",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
@@ -67,11 +67,19 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-splash-screen",
       [
         "expo-av",
         {
           "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "cover",
+          "backgroundColor": "#1a1208"
         }
       ]
     ],
