@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.thedailyverse.app",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
@@ -81,7 +81,8 @@
           "resizeMode": "cover",
           "backgroundColor": "#1a1208"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "scheme": "thedailyverse",
     "extra": {
