@@ -2,15 +2,26 @@ import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Linking } from 'r
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS } from '../src/constants/theme';
+import { setOnboarded } from '../src/utils/storage';
 
 const { width } = Dimensions.get('window');
 
 export default function OnboardingScreen() {
   const router = useRouter();
 
+  async function handleSkip() {
+    await setOnboarded(true);
+    router.replace('/(tabs)');
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.gradientTop} />
+
+      {/* Skip button */}
+      <TouchableOpacity style={styles.skipBtn} onPress={handleSkip}>
+        <Text style={styles.skipText}>Skip for now</Text>
+      </TouchableOpacity>
 
       <View style={styles.content}>
         {/* Cross icon */}
@@ -36,7 +47,11 @@ export default function OnboardingScreen() {
           </View>
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>📖</Text>
-            <Text style={styles.featureText}>31,102 verses from the KJV Bible</Text>
+            <Text style={styles.featureText}>31,102 verses in KJV and ASV</Text>
+          </View>
+          <View style={styles.featureRow}>
+            <Text style={styles.featureIcon}>🎲</Text>
+            <Text style={styles.featureText}>Your own unique random verse each day</Text>
           </View>
           <View style={styles.featureRow}>
             <Text style={styles.featureIcon}>🆓</Text>
@@ -84,6 +99,19 @@ const styles = StyleSheet.create({
     height: 220,
     backgroundColor: COLORS.backgroundGradientTop,
     opacity: 0.7,
+  },
+  skipBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    zIndex: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  skipText: {
+    fontFamily: FONTS.uiMedium,
+    fontSize: 14,
+    color: COLORS.primary,
   },
   content: {
     flex: 1,
