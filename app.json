@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.thedailyverse.app",
-      "buildNumber": "1",
+      "buildNumber": "3",
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
@@ -67,6 +67,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
+      "expo-splash-screen",
       [
         "expo-av",
         {

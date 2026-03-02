@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { Stack } from 'expo-router';
+import { useEffect, useState, useCallback } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { Stack, SplashScreen } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
   Cinzel_400Regular,
@@ -21,12 +20,14 @@ import {
 } from '@expo-google-fonts/dm-sans';
 import { isOnboarded } from '../src/utils/storage';
 
+// Use expo-router's SplashScreen (not expo-splash-screen directly).
+// expo-router manages its own internal splash lock via _internal_preventAutoHideAsync.
+// We must use expo-router's exported SplashScreen to stay in sync with that system.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [appReady, setAppReady] = useState(false);
   const [hasOnboarded, setHasOnboarded] = useState(false);
-  const [splashHidden, setSplashHidden] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     Cinzel_400Regular,
@@ -46,39 +47,61 @@ export default function RootLayout() {
         const onboarded = await isOnboarded();
         setHasOnboarded(onboarded);
       } catch (e) {
-        // Continue with default (not onboarded)
+        // Default to not onboarded
       }
       setAppReady(true);
     }
     prepare();
-  }, []);
 
-  // Force hide splash after 3 seconds no matter what
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      SplashScreen.hideAsync().catch(() => {});
-      setSplashHidden(true);
+    // Failsafe: force ready after 3 seconds no matter what
+    const failsafe = setTimeout(() => {
       setAppReady(true);
     }, 3000);
-    return () => clearTimeout(timer);
+
+    return () => clearTimeout(failsafe);
   }, []);
 
-  const fontsReady = fontsLoaded || fontError;
-
-  // Hide splash as soon as everything is ready
-  useEffect(() => {
-    if (fontsReady && appReady && !splashHidden) {
-      SplashScreen.hideAsync().catch(() => {});
-      setSplashHidden(true);
+  // Once everything is loaded, hide the splash screen
+  const onLayoutReady = useCallback(async () => {
+    if ((fontsLoaded || fontError) && appReady) {
+      await SplashScreen.hideAsync();
     }
-  }, [fontsReady, appReady, splashHidden]);
+  }, [fontsLoaded, fontError, appReady]);
 
-  if (!splashHidden && !fontsReady && !appReady) {
-    return <View style={{ flex: 1, backgroundColor: '#1a1208' }} />;
+  // Also trigger hide via effect as backup
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && appReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError, appReady]);
+
+  // Absolute nuclear failsafe: hide splash after 5 seconds regardless of state
+  useEffect(() => {
+    const nuclear = setTimeout(() => {
+      SplashScreen.hideAsync();
+    }, 5000);
+    return () => clearTimeout(nuclear);
+  }, []);
+
+  // Show loading while fonts load
+  if (!fontsLoaded && !fontError) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#1a1208', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#9B6B3E" />
+      </View>
+    );
+  }
+
+  if (!appReady) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#1a1208', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#9B6B3E" />
+      </View>
+    );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1 }} onLayout={onLayoutReady}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{ headerShown: false }}
