@@ -50,7 +50,7 @@ export default function OnboardingScreen() {
             <Text style={styles.featureText}>31,102 verses in KJV and ASV</Text>
           </View>
           <View style={styles.featureRow}>
-            <Text style={styles.featureIcon}>🎲</Text>
+            <Text style={styles.featureIcon}>✨</Text>
             <Text style={styles.featureText}>Your own unique random verse each day</Text>
           </View>
           <View style={styles.featureRow}>
