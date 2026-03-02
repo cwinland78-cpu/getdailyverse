@@ -45,7 +45,7 @@ export const FONTS = {
   // UI font
   uiRegular: 'DMSans_400Regular',
   uiMedium: 'DMSans_500Medium',
-  uiSemiBold: 'DMSans_600SemiBold',
+  uiSemiBold: 'DMSans_700Bold',
 };
 
 export const SPACING = {

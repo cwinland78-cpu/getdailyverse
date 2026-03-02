@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../src/constants/theme';
-import { BIBLE_BOOKS, OT_BOOKS, NT_BOOKS, parseReference, QUICK_PICK_BOOKS } from '../../src/utils/bible';
+import { COLORS, FONTS, SPACING, RADIUS, SHADOWS, QUICK_PICK_BOOKS } from '../../src/constants/theme';
+import { BIBLE_BOOKS, OT_BOOKS, NT_BOOKS, parseReference } from '../../src/utils/bible';
 
 export default function BrowseScreen() {
   const router = useRouter();

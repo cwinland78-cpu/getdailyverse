@@ -17,7 +17,7 @@ import {
 import {
   DMSans_400Regular,
   DMSans_500Medium,
-  DMSans_600SemiBold,
+  DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
 import { isOnboarded } from '../src/utils/storage';
 
@@ -38,7 +38,7 @@ export default function RootLayout() {
     Lora_600SemiBold,
     DMSans_400Regular,
     DMSans_500Medium,
-    DMSans_600SemiBold,
+    DMSans_700Bold,
   });
 
   // Load app state
