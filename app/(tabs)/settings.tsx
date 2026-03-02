@@ -14,14 +14,20 @@ export default function SettingsScreen() {
   const router = useRouter();
   const [subscriber, setSubscriber] = useState<SubscriberData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
     loadSubscriber();
   }, []);
 
   async function loadSubscriber() {
-    const sub = await getSubscriber();
-    setSubscriber(sub);
+    try {
+      const sub = await getSubscriber();
+      setSubscriber(sub);
+    } catch (e) {
+      console.error('Error loading subscriber:', e);
+    }
+    setDataLoaded(true);
   }
 
   async function handleDeleteAccount() {
@@ -61,12 +67,71 @@ export default function SettingsScreen() {
     setLoading(false);
   }
 
-  if (!subscriber) {
+  if (!dataLoaded) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           <ActivityIndicator color={COLORS.primary} />
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!subscriber) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.gradientTop} />
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <Text style={styles.title}>Settings</Text>
+          <Text style={styles.subtitle}>Manage your daily verse delivery</Text>
+
+          <View style={styles.card}>
+            <Text style={[styles.cardTitle, { marginBottom: 12 }]}>NOT SUBSCRIBED</Text>
+            <Text style={{ fontFamily: FONTS.uiRegular, fontSize: 14, color: COLORS.textMuted, lineHeight: 22 }}>
+              You haven't set up SMS delivery yet. You can still browse the Bible, listen to audio, and read verses in the app.
+            </Text>
+            <TouchableOpacity
+              style={[styles.toggle, styles.toggleActive, { marginTop: 16 }]}
+              onPress={() => router.push('/onboarding')}
+            >
+              <Text style={[styles.toggleText, styles.toggleTextActive]}>Set Up Daily Texts</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Links still available */}
+          <View style={styles.linksSection}>
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => Linking.openURL('https://getdailyverse.com')}
+            >
+              <Text style={styles.linkText}>Visit our website</Text>
+              <Text style={styles.linkArrow}>{'>'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => Linking.openURL('https://getdailyverse.com/privacy')}
+            >
+              <Text style={styles.linkText}>Privacy Policy</Text>
+              <Text style={styles.linkArrow}>{'>'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => Linking.openURL('https://getdailyverse.com/terms')}
+            >
+              <Text style={styles.linkText}>Terms of Service</Text>
+              <Text style={styles.linkArrow}>{'>'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.linkRow}
+              onPress={() => Linking.openURL('mailto:support@getdailyverse.com')}
+            >
+              <Text style={styles.linkText}>Contact support</Text>
+              <Text style={styles.linkArrow}>{'>'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.version}>The Daily Verse v1.0.0</Text>
+        </ScrollView>
       </SafeAreaView>
     );
   }
