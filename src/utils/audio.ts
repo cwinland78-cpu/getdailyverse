@@ -2,7 +2,6 @@
 // Free API from Faith Comes By Hearing
 // Sign up for API key: https://4.dbt.io/api_key/request
 
-import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Bible Brain API config
@@ -10,65 +9,41 @@ const BIBLE_BRAIN_API = 'https://4.dbt.io/api';
 const API_KEY = 'dbce0e77-6c45-4d66-b59c-38a253acacdc';
 
 // KJV Audio filesets from Bible Brain
-// Each "voice" maps to a different audio recording/fileset
+// Bible Brain splits audio into OT and NT filesets.
+// Each "voice" maps to a pair of filesets (OT + NT).
 export interface VoiceOption {
   id: string;
   name: string;
   description: string;
-  color: string;        // gradient start color for avatar
-  colorEnd: string;     // gradient end color
-  filesetId: string;    // Bible Brain fileset ID
+  color: string;
+  colorEnd: string;
+  otFilesetId: string;  // Old Testament fileset
+  ntFilesetId: string;  // New Testament fileset
   emoji: string;
 }
 
-// These fileset IDs correspond to different KJV audio recordings
-// available through Bible Brain. Update with actual IDs after
-// registering and checking available content.
+// Only 2 actual recording styles exist for KJV on Bible Brain:
+// Standard narration and Dramatized (with multiple voice actors + sound effects)
 export const VOICE_OPTIONS: VoiceOption[] = [
   {
-    id: 'david',
-    name: 'David',
-    description: 'Deep, reverent',
+    id: 'standard',
+    name: 'Standard',
+    description: 'Clear narration',
     color: '#8B5E3C',
     colorEnd: '#A67C52',
-    filesetId: 'ENGKJVO1DA',   // KJV Old Testament Drama
-    emoji: '🗣️',
+    otFilesetId: 'ENGKJVO1DA',
+    ntFilesetId: 'ENGKJVN1DA',
+    emoji: '📖',
   },
   {
-    id: 'grace',
-    name: 'Grace',
-    description: 'Warm, gentle',
-    color: '#6B8E7B',
-    colorEnd: '#92B5A0',
-    filesetId: 'ENGKJVO2DA',   // KJV standard narration
-    emoji: '🗣️',
-  },
-  {
-    id: 'solomon',
-    name: 'Solomon',
-    description: 'Rich, dramatic',
-    color: '#7B6B8E',
-    colorEnd: '#9E8EB5',
-    filesetId: 'ENGKJVN1DA',   // KJV NT dramatized
-    emoji: '🗣️',
-  },
-  {
-    id: 'abigail',
-    name: 'Abigail',
-    description: 'Calm, soothing',
-    color: '#8E7B6B',
-    colorEnd: '#B59E8E',
-    filesetId: 'ENGKJVN2DA',   // KJV alternate recording
-    emoji: '🗣️',
-  },
-  {
-    id: 'elijah',
-    name: 'Elijah',
-    description: 'Bold, powerful',
-    color: '#6B7E8E',
-    colorEnd: '#8EA5B5',
-    filesetId: 'ENGKJVO1DA16', // KJV 16kbps version
-    emoji: '🗣️',
+    id: 'dramatized',
+    name: 'Dramatized',
+    description: 'Multi-voice drama',
+    color: '#6B4E8E',
+    colorEnd: '#9070B5',
+    otFilesetId: 'ENGKJVO2DA',
+    ntFilesetId: 'ENGKJVN2DA',
+    emoji: '🎭',
   },
 ];
 
@@ -93,11 +68,19 @@ export const BOOK_ID_MAP: Record<string, string> = {
   '3 John': '3JN', 'Jude': 'JUD', 'Revelation': 'REV',
 };
 
+// OT books for determining which fileset to use
+const OT_BOOK_IDS = new Set([
+  'GEN','EXO','LEV','NUM','DEU','JOS','JDG','RUT','1SA','2SA','1KI','2KI',
+  '1CH','2CH','EZR','NEH','EST','JOB','PSA','PRO','ECC','SNG','ISA','JER',
+  'LAM','EZK','DAN','HOS','JOL','AMO','OBA','JON','MIC','NAM','HAB','ZEP',
+  'HAG','ZEC','MAL',
+]);
+
 // Get audio URL for a specific chapter
 export async function getChapterAudioUrl(
   bookName: string,
   chapter: number,
-  voiceId: string = 'david'
+  voiceId: string = 'standard'
 ): Promise<string | null> {
   const voice = VOICE_OPTIONS.find(v => v.id === voiceId);
   if (!voice) return null;
@@ -105,11 +88,13 @@ export async function getChapterAudioUrl(
   const bookId = BOOK_ID_MAP[bookName];
   if (!bookId) return null;
 
+  // Pick OT or NT fileset based on book
+  const filesetId = OT_BOOK_IDS.has(bookId) ? voice.otFilesetId : voice.ntFilesetId;
   const chapterStr = chapter.toString();
 
   try {
     const response = await fetch(
-      `${BIBLE_BRAIN_API}/bibles/filesets/${voice.filesetId}/${bookId}/${chapterStr}?key=${API_KEY}&v=4`
+      `${BIBLE_BRAIN_API}/bibles/filesets/${filesetId}/${bookId}/${chapterStr}?key=${API_KEY}&v=4`
     );
     const data = await response.json();
 
@@ -191,7 +176,7 @@ export async function saveVoicePreference(voiceId: string) {
 
 export async function getVoicePreference(): Promise<string> {
   const voice = await AsyncStorage.getItem('@selected_voice');
-  return voice || 'david';
+  return voice || 'standard';
 }
 
 // Playback speed options

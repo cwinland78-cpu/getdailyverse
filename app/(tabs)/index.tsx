@@ -6,15 +6,12 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
-import { Audio } from 'expo-av';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../src/constants/theme';
 import { getRandomVerse, getChapter } from '../../src/utils/supabase';
 import { getSubscriber } from '../../src/utils/storage';
 import { formatDeliveryTime } from '../../src/utils/bible';
-import {
-  getChapterAudioUrl, formatTime, getVoicePreference,
-  VOICE_OPTIONS, getNextSpeed, saveAudioState,
-} from '../../src/utils/audio';
+import { formatTime, VOICE_OPTIONS } from '../../src/utils/audio';
+import { audioManager, AudioManagerState } from '../../src/utils/audioManager';
 
 interface Verse {
   id: string;
@@ -32,27 +29,14 @@ export default function TodayScreen() {
   const [deliveryTime, setDeliveryTime] = useState('8:00 AM');
   const [copied, setCopied] = useState(false);
 
-  // Audio state
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [positionMs, setPositionMs] = useState(0);
-  const [durationMs, setDurationMs] = useState(0);
-  const [audioLoading, setAudioLoading] = useState(false);
-  const [speed, setSpeed] = useState(1.0);
+  // Audio state from shared manager
+  const [audioState, setAudioState] = useState<AudioManagerState>(audioManager.getState());
 
   useEffect(() => {
     loadData();
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-    });
-
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-    };
+    audioManager.init();
+    const unsub = audioManager.subscribe(setAudioState);
+    return unsub;
   }, []);
 
   async function loadData() {
@@ -101,61 +85,19 @@ export default function TodayScreen() {
   async function handlePlayPause() {
     if (!verse) return;
 
-    if (sound && isPlaying) {
-      await sound.pauseAsync();
-      setIsPlaying(false);
+    // If nothing is loaded or different chapter, load this verse's chapter
+    if (!audioState.isLoaded ||
+        audioState.currentBook !== verse.book ||
+        audioState.currentChapter !== verse.chapter) {
+      await audioManager.loadAndPlay(verse.book, verse.chapter);
       return;
     }
 
-    if (sound && !isPlaying) {
-      await sound.playAsync();
-      setIsPlaying(true);
-      return;
-    }
-
-    setAudioLoading(true);
-    try {
-      const voiceId = await getVoicePreference();
-      const url = await getChapterAudioUrl(verse.book, verse.chapter, voiceId);
-
-      if (url) {
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: url },
-          { shouldPlay: true, rate: speed },
-          onPlaybackStatusUpdate
-        );
-        setSound(newSound);
-        setIsPlaying(true);
-        saveAudioState({
-          currentBook: verse.book,
-          currentChapter: verse.chapter,
-          currentVoice: voiceId,
-        });
-      }
-    } catch (err) {
-      console.error('Error loading audio:', err);
-    }
-    setAudioLoading(false);
-  }
-
-  function onPlaybackStatusUpdate(status: any) {
-    if (status.isLoaded) {
-      setPositionMs(status.positionMillis || 0);
-      setDurationMs(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying);
-      if (status.didJustFinish) {
-        setIsPlaying(false);
-        setPositionMs(0);
-      }
-    }
+    await audioManager.playPause();
   }
 
   async function handleSpeed() {
-    const next = getNextSpeed(speed);
-    setSpeed(next);
-    if (sound) {
-      await sound.setRateAsync(next, true);
-    }
+    await audioManager.cycleSpeed();
   }
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -254,12 +196,12 @@ export default function TodayScreen() {
                 <TouchableOpacity
                   style={styles.audioPlayBtn}
                   onPress={handlePlayPause}
-                  disabled={audioLoading}
+                  disabled={audioState.audioLoading}
                 >
-                  {audioLoading ? (
+                  {audioState.audioLoading ? (
                     <ActivityIndicator size="small" color={COLORS.white} />
                   ) : (
-                    <Text style={styles.playIcon}>{isPlaying ? '⏸' : '▶️'}</Text>
+                    <Text style={styles.playIcon}>{audioState.isPlaying ? '⏸' : '▶️'}</Text>
                   )}
                 </TouchableOpacity>
                 <View style={styles.audioTrackInfo}>
@@ -273,20 +215,20 @@ export default function TodayScreen() {
                     <View
                       style={[
                         styles.progressFill,
-                        { width: durationMs > 0 ? `${(positionMs / durationMs) * 100}%` : '0%' },
+                        { width: audioState.durationMs > 0 ? `${(audioState.positionMs / audioState.durationMs) * 100}%` : '0%' },
                       ]}
                     />
                   </View>
                   <View style={styles.timeRow}>
-                    <Text style={styles.timeText}>{formatTime(positionMs)}</Text>
-                    <Text style={styles.timeText}>{formatTime(durationMs)}</Text>
+                    <Text style={styles.timeText}>{formatTime(audioState.positionMs)}</Text>
+                    <Text style={styles.timeText}>{formatTime(audioState.durationMs)}</Text>
                   </View>
                 </View>
               </View>
 
               <View style={styles.audioControls}>
                 <TouchableOpacity onPress={handleSpeed}>
-                  <Text style={styles.speedBtn}>{speed}x</Text>
+                  <Text style={styles.speedBtn}>{audioState.speed}x</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.openListenBtn}

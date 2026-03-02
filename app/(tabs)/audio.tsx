@@ -5,37 +5,25 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../src/constants/theme';
 import { BIBLE_BOOKS, OT_BOOKS, NT_BOOKS } from '../../src/utils/bible';
 import {
   VOICE_OPTIONS, VoiceOption,
-  getChapterAudioUrl, formatTime, getNextSpeed,
-  saveVoicePreference, getVoicePreference,
-  saveAudioState, loadAudioState, markChapterListened,
+  formatTime, saveVoicePreference, getVoicePreference,
 } from '../../src/utils/audio';
+import { audioManager, AudioManagerState } from '../../src/utils/audioManager';
 
 export default function AudioScreen() {
   const router = useRouter();
 
   // Voice
-  const [selectedVoice, setSelectedVoice] = useState<string>('david');
+  const [selectedVoice, setSelectedVoice] = useState<string>('standard');
 
   // Testament filter
   const [testament, setTestament] = useState<'OT' | 'NT'>('OT');
 
-  // Audio playback
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [positionMs, setPositionMs] = useState(0);
-  const [durationMs, setDurationMs] = useState(0);
-  const [audioLoading, setAudioLoading] = useState(false);
-  const [speed, setSpeed] = useState(1.0);
-
-  // Current track
-  const [currentBook, setCurrentBook] = useState('Genesis');
-  const [currentChapter, setCurrentChapter] = useState(1);
-  const [hasTrack, setHasTrack] = useState(false);
+  // Shared audio state
+  const [audioState, setAudioState] = useState<AudioManagerState>(audioManager.getState());
 
   // Animated bars for playing indicator
   const [bar1] = useState(new Animated.Value(6));
@@ -43,23 +31,22 @@ export default function AudioScreen() {
   const [bar3] = useState(new Animated.Value(8));
 
   useEffect(() => {
-    loadSavedState();
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
+    audioManager.init();
+    const unsub = audioManager.subscribe((state) => {
+      setAudioState(state);
+      setSelectedVoice(state.currentVoice);
     });
 
-    return () => {
-      if (sound) sound.unloadAsync();
-    };
+    getVoicePreference().then(v => setSelectedVoice(v));
+
+    return unsub;
   }, []);
 
   useEffect(() => {
-    if (isPlaying) {
+    if (audioState.isPlaying) {
       animateBars();
     }
-  }, [isPlaying]);
+  }, [audioState.isPlaying]);
 
   function animateBars() {
     const animate = (bar: Animated.Value, toValue: number, duration: number) => {
@@ -67,7 +54,7 @@ export default function AudioScreen() {
         Animated.timing(bar, { toValue, duration, useNativeDriver: false }),
         Animated.timing(bar, { toValue: 4, duration, useNativeDriver: false }),
       ]).start(() => {
-        if (isPlaying) animate(bar, toValue, duration);
+        if (audioState.isPlaying) animate(bar, toValue, duration);
       });
     };
     animate(bar1, 14, 400);
@@ -75,150 +62,34 @@ export default function AudioScreen() {
     animate(bar3, 12, 500);
   }
 
-  async function loadSavedState() {
-    const voice = await getVoicePreference();
-    setSelectedVoice(voice);
-
-    const state = await loadAudioState();
-    if (state.currentBook) setCurrentBook(state.currentBook);
-    if (state.currentChapter) setCurrentChapter(state.currentChapter);
-    if (state.playbackSpeed) setSpeed(state.playbackSpeed);
-    if (state.currentBook) setHasTrack(true);
-  }
-
   async function selectVoice(voiceId: string) {
     setSelectedVoice(voiceId);
     await saveVoicePreference(voiceId);
-    // If currently playing, reload with new voice
-    if (sound && isPlaying) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      setSound(null);
-      setIsPlaying(false);
-      // Auto-reload with new voice
-      loadAndPlay(currentBook, currentChapter, voiceId);
-    }
-  }
-
-  async function loadAndPlay(book: string, chapter: number, voiceId?: string) {
-    setAudioLoading(true);
-    setCurrentBook(book);
-    setCurrentChapter(chapter);
-    setHasTrack(true);
-
-    // Unload existing
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      setSound(null);
-    }
-
-    try {
-      const voice = voiceId || selectedVoice;
-      const url = await getChapterAudioUrl(book, chapter, voice);
-
-      if (url) {
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: url },
-          { shouldPlay: true, rate: speed },
-          onPlaybackStatusUpdate
-        );
-        setSound(newSound);
-        setIsPlaying(true);
-        saveAudioState({
-          currentBook: book,
-          currentChapter: chapter,
-          currentVoice: voice,
-          playbackSpeed: speed,
-        });
-        markChapterListened(book, chapter);
-      }
-    } catch (err) {
-      console.error('Error loading audio:', err);
-    }
-    setAudioLoading(false);
+    await audioManager.setVoice(voiceId);
   }
 
   async function handlePlayPause() {
-    if (!hasTrack) {
-      loadAndPlay('Genesis', 1);
-      return;
-    }
-
-    if (sound && isPlaying) {
-      await sound.pauseAsync();
-      setIsPlaying(false);
-      return;
-    }
-
-    if (sound && !isPlaying) {
-      await sound.playAsync();
-      setIsPlaying(true);
-      return;
-    }
-
-    loadAndPlay(currentBook, currentChapter);
-  }
-
-  function onPlaybackStatusUpdate(status: any) {
-    if (status.isLoaded) {
-      setPositionMs(status.positionMillis || 0);
-      setDurationMs(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying);
-      if (status.didJustFinish) {
-        handleNext();
-      }
-    }
+    await audioManager.playPause();
   }
 
   async function handleNext() {
-    const bookData = BIBLE_BOOKS.find(b => b.name === currentBook);
-    if (!bookData) return;
-
-    if (currentChapter < bookData.chapters) {
-      loadAndPlay(currentBook, currentChapter + 1);
-    } else {
-      // Move to next book
-      const bookIdx = BIBLE_BOOKS.findIndex(b => b.name === currentBook);
-      if (bookIdx < BIBLE_BOOKS.length - 1) {
-        loadAndPlay(BIBLE_BOOKS[bookIdx + 1].name, 1);
-      }
-    }
+    await audioManager.playNext();
   }
 
   async function handlePrev() {
-    if (currentChapter > 1) {
-      loadAndPlay(currentBook, currentChapter - 1);
-    } else {
-      const bookIdx = BIBLE_BOOKS.findIndex(b => b.name === currentBook);
-      if (bookIdx > 0) {
-        const prevBook = BIBLE_BOOKS[bookIdx - 1];
-        loadAndPlay(prevBook.name, prevBook.chapters);
-      }
-    }
+    await audioManager.playPrev();
   }
 
   async function handleSkipBack() {
-    if (sound) {
-      const newPos = Math.max(0, positionMs - 15000);
-      await sound.setPositionAsync(newPos);
-    }
+    await audioManager.skipBack();
   }
 
   async function handleSkipForward() {
-    if (sound) {
-      const newPos = Math.min(durationMs, positionMs + 15000);
-      await sound.setPositionAsync(newPos);
-    }
+    await audioManager.skipForward();
   }
 
   async function handleSpeed() {
-    const next = getNextSpeed(speed);
-    setSpeed(next);
-    if (sound) {
-      await sound.setRateAsync(next, true);
-    }
-    saveAudioState({ playbackSpeed: next });
+    await audioManager.cycleSpeed();
   }
 
   function handleBookPress(bookName: string) {
@@ -226,17 +97,17 @@ export default function AudioScreen() {
       pathname: '/audio-chapters',
       params: {
         book: bookName,
-        currentBook,
-        currentChapter: currentChapter.toString(),
-        isPlaying: isPlaying ? '1' : '0',
+        currentBook: audioState.currentBook,
+        currentChapter: audioState.currentChapter.toString(),
+        isPlaying: audioState.isPlaying ? '1' : '0',
       },
     });
   }
 
   const books = testament === 'OT' ? OT_BOOKS : NT_BOOKS;
   const voiceData = VOICE_OPTIONS.find(v => v.id === selectedVoice);
-  const currentBookData = BIBLE_BOOKS.find(b => b.name === currentBook);
-  const bookIndex = BIBLE_BOOKS.findIndex(b => b.name === currentBook) + 1;
+  const currentBookData = BIBLE_BOOKS.find(b => b.name === audioState.currentBook);
+  const bookIndex = BIBLE_BOOKS.findIndex(b => b.name === audioState.currentBook) + 1;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -247,7 +118,7 @@ export default function AudioScreen() {
         <View style={styles.headerRow}>
           <Text style={styles.pageTitle}>Audio Bible</Text>
           <TouchableOpacity onPress={handleSpeed}>
-            <Text style={styles.speedBtnHeader}>{speed}x</Text>
+            <Text style={styles.speedBtnHeader}>{audioState.speed}x</Text>
           </TouchableOpacity>
         </View>
 
@@ -273,9 +144,6 @@ export default function AudioScreen() {
                 </View>
                 <Text style={styles.voiceName}>{voice.name}</Text>
                 <Text style={styles.voiceDesc}>{voice.description}</Text>
-                <TouchableOpacity style={styles.previewBtn}>
-                  <Text style={styles.previewLabel}>▶ Preview</Text>
-                </TouchableOpacity>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -289,10 +157,10 @@ export default function AudioScreen() {
             </View>
             <View style={styles.npInfo}>
               <Text style={styles.npBook} numberOfLines={1}>
-                {currentBook}
+                {audioState.currentBook}
               </Text>
               <Text style={styles.npChapter}>
-                Chapter {currentChapter}
+                Chapter {audioState.currentChapter}
                 {currentBookData ? ` of ${currentBookData.chapters}` : ''}
               </Text>
               <Text style={styles.npVoice}>
@@ -306,13 +174,13 @@ export default function AudioScreen() {
             <View
               style={[
                 styles.npProgressFill,
-                { width: durationMs > 0 ? `${(positionMs / durationMs) * 100}%` : '0%' },
+                { width: audioState.durationMs > 0 ? `${(audioState.positionMs / audioState.durationMs) * 100}%` : '0%' },
               ]}
             />
           </View>
           <View style={styles.npTimeRow}>
-            <Text style={styles.npTime}>{formatTime(positionMs)}</Text>
-            <Text style={styles.npTime}>{formatTime(durationMs)}</Text>
+            <Text style={styles.npTime}>{formatTime(audioState.positionMs)}</Text>
+            <Text style={styles.npTime}>{formatTime(audioState.durationMs)}</Text>
           </View>
 
           {/* Controls */}
@@ -326,12 +194,12 @@ export default function AudioScreen() {
             <TouchableOpacity
               style={styles.ctrlPlay}
               onPress={handlePlayPause}
-              disabled={audioLoading}
+              disabled={audioState.audioLoading}
             >
-              {audioLoading ? (
+              {audioState.audioLoading ? (
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <Text style={styles.ctrlPlayIcon}>{isPlaying ? '⏸' : '▶️'}</Text>
+                <Text style={styles.ctrlPlayIcon}>{audioState.isPlaying ? '⏸' : '▶️'}</Text>
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSkipForward} style={styles.ctrlBtn}>
@@ -375,7 +243,7 @@ export default function AudioScreen() {
           <View style={styles.bookGrid}>
             {books.map((book, idx) => {
               const globalIdx = BIBLE_BOOKS.findIndex(b => b.name === book.name) + 1;
-              const isCurrentBook = book.name === currentBook;
+              const isCurrentBook = book.name === audioState.currentBook;
 
               return (
                 <TouchableOpacity
@@ -392,7 +260,7 @@ export default function AudioScreen() {
                     <Text style={styles.bookName} numberOfLines={1}>{book.name}</Text>
                     <Text style={styles.bookChapters}>{book.chapters} chapters</Text>
                   </View>
-                  {isCurrentBook && isPlaying && (
+                  {isCurrentBook && audioState.isPlaying && (
                     <View style={styles.playingIndicator}>
                       <Animated.View style={[styles.bar, { height: bar1 }]} />
                       <Animated.View style={[styles.bar, { height: bar2 }]} />

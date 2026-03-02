@@ -5,14 +5,12 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../src/constants/theme';
 import { BIBLE_BOOKS } from '../src/utils/bible';
 import {
-  getChapterAudioUrl, formatTime, getNextSpeed,
-  getVoicePreference, getListenedChapters,
-  saveAudioState, markChapterListened, VOICE_OPTIONS,
+  formatTime, getListenedChapters, VOICE_OPTIONS,
 } from '../src/utils/audio';
+import { audioManager, AudioManagerState } from '../src/utils/audioManager';
 
 export default function AudioChaptersScreen() {
   const router = useRouter();
@@ -26,127 +24,44 @@ export default function AudioChaptersScreen() {
   const bookName = params.book || 'Genesis';
   const bookData = BIBLE_BOOKS.find(b => b.name === bookName);
   const totalChapters = bookData?.chapters || 1;
-  const activeChapter = parseInt(params.currentChapter || '0');
 
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [positionMs, setPositionMs] = useState(0);
-  const [durationMs, setDurationMs] = useState(0);
-  const [audioLoading, setAudioLoading] = useState(false);
-  const [speed, setSpeed] = useState(1.0);
-  const [currentChapter, setCurrentChapter] = useState(activeChapter || 1);
-  const [selectedVoice, setSelectedVoice] = useState('david');
+  const [audioState, setAudioState] = useState<AudioManagerState>(audioManager.getState());
   const [listened, setListened] = useState<number[]>([]);
 
   useEffect(() => {
-    loadData();
-    Audio.setAudioModeAsync({
-      allowsRecordingIOS: false,
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
-    });
-    return () => { if (sound) sound.unloadAsync(); };
+    audioManager.init();
+    const unsub = audioManager.subscribe(setAudioState);
+    getListenedChapters(bookName).then(setListened);
+    return unsub;
   }, []);
 
-  async function loadData() {
-    const voice = await getVoicePreference();
-    setSelectedVoice(voice);
-    const listenedChapters = await getListenedChapters(bookName);
-    setListened(listenedChapters);
-  }
-
   async function playChapter(chapter: number) {
-    setAudioLoading(true);
-    setCurrentChapter(chapter);
-
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      setSound(null);
-    }
-
-    try {
-      const url = await getChapterAudioUrl(bookName, chapter, selectedVoice);
-      if (url) {
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: url },
-          { shouldPlay: true, rate: speed },
-          onPlaybackStatusUpdate
-        );
-        setSound(newSound);
-        setIsPlaying(true);
-        saveAudioState({
-          currentBook: bookName,
-          currentChapter: chapter,
-          currentVoice: selectedVoice,
-        });
-        markChapterListened(bookName, chapter);
-        setListened(prev => prev.includes(chapter) ? prev : [...prev, chapter]);
-      }
-    } catch (err) {
-      console.error('Error loading audio:', err);
-    }
-    setAudioLoading(false);
+    await audioManager.loadAndPlay(bookName, chapter);
+    setListened(prev => prev.includes(chapter) ? prev : [...prev, chapter]);
   }
 
   async function handlePlayPause() {
-    if (sound && isPlaying) {
-      await sound.pauseAsync();
-      setIsPlaying(false);
-      return;
-    }
-    if (sound && !isPlaying) {
-      await sound.playAsync();
-      setIsPlaying(true);
-      return;
-    }
-    playChapter(currentChapter);
-  }
-
-  function onPlaybackStatusUpdate(status: any) {
-    if (status.isLoaded) {
-      setPositionMs(status.positionMillis || 0);
-      setDurationMs(status.durationMillis || 0);
-      setIsPlaying(status.isPlaying);
-      if (status.didJustFinish) {
-        setIsPlaying(false);
-        if (currentChapter < totalChapters) {
-          playChapter(currentChapter + 1);
-        }
-      }
-    }
-  }
-
-  async function handleSpeed() {
-    const next = getNextSpeed(speed);
-    setSpeed(next);
-    if (sound) await sound.setRateAsync(next, true);
+    await audioManager.playPause();
   }
 
   async function handlePrev() {
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      setSound(null);
-    }
-    const prev = Math.max(1, currentChapter - 1);
-    playChapter(prev);
+    const prev = Math.max(1, audioState.currentChapter - 1);
+    await audioManager.loadAndPlay(bookName, prev);
   }
 
   async function handleNext() {
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-      setSound(null);
-    }
-    const next = Math.min(totalChapters, currentChapter + 1);
-    playChapter(next);
+    const next = Math.min(totalChapters, audioState.currentChapter + 1);
+    await audioManager.loadAndPlay(bookName, next);
   }
 
-  const voiceData = VOICE_OPTIONS.find(v => v.id === selectedVoice);
-  const chapters = Array.from({ length: totalChapters }, (_, i) => i + 1);
+  async function handleSpeed() {
+    await audioManager.cycleSpeed();
+  }
 
-  // Estimate total listening time (~4.5 min per chapter average)
+  const voiceData = VOICE_OPTIONS.find(v => v.id === audioState.currentVoice);
+  const chapters = Array.from({ length: totalChapters }, (_, i) => i + 1);
+  const isThisBook = audioState.currentBook === bookName;
+
   const estimatedMinutes = totalChapters * 4.5;
   const hours = Math.floor(estimatedMinutes / 60);
   const mins = Math.round(estimatedMinutes % 60);
@@ -166,7 +81,6 @@ export default function AudioChaptersScreen() {
           {totalChapters} Chapters · {timeStr}
         </Text>
 
-        {/* Legend */}
         <View style={styles.legend}>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, styles.legendListened]} />
@@ -178,10 +92,10 @@ export default function AudioChaptersScreen() {
           </View>
         </View>
 
-        {/* Chapter Grid */}
         <View style={styles.chapterGrid}>
           {chapters.map((ch) => {
-            const isActive = ch === currentChapter && (isPlaying || audioLoading);
+            const isActive = isThisBook && ch === audioState.currentChapter &&
+              (audioState.isPlaying || audioState.audioLoading);
             const isListened = listened.includes(ch) && !isActive;
 
             return (
@@ -194,7 +108,7 @@ export default function AudioChaptersScreen() {
                 ]}
                 onPress={() => playChapter(ch)}
               >
-                {audioLoading && ch === currentChapter ? (
+                {audioState.audioLoading && isThisBook && ch === audioState.currentChapter ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <Text style={[
@@ -210,55 +124,55 @@ export default function AudioChaptersScreen() {
           })}
         </View>
 
-        {/* Mini Player */}
-        <View style={[styles.miniPlayer, SHADOWS.card]}>
-          <View style={styles.mpTop}>
-            <View style={styles.mpArt}>
-              <Text style={{ fontSize: 18 }}>📖</Text>
+        {isThisBook && (
+          <View style={[styles.miniPlayer, SHADOWS.card]}>
+            <View style={styles.mpTop}>
+              <View style={styles.mpArt}>
+                <Text style={{ fontSize: 18 }}>📖</Text>
+              </View>
+              <View style={styles.mpInfo}>
+                <Text style={styles.mpTitle} numberOfLines={1}>
+                  {bookName} Chapter {audioState.currentChapter}
+                </Text>
+                <Text style={styles.mpVoice}>Voice: {voiceData?.name || 'Standard'}</Text>
+              </View>
             </View>
-            <View style={styles.mpInfo}>
-              <Text style={styles.mpTitle} numberOfLines={1}>
-                {bookName} Chapter {currentChapter}
-              </Text>
-              <Text style={styles.mpVoice}>Voice: {voiceData?.name || 'David'}</Text>
+
+            <View style={styles.mpProgress}>
+              <View
+                style={[
+                  styles.mpProgressFill,
+                  { width: audioState.durationMs > 0
+                    ? `${(audioState.positionMs / audioState.durationMs) * 100}%`
+                    : '0%' },
+                ]}
+              />
+            </View>
+            <View style={styles.mpTimeRow}>
+              <Text style={styles.mpTime}>{formatTime(audioState.positionMs)}</Text>
+              <Text style={styles.mpTime}>{formatTime(audioState.durationMs)}</Text>
+            </View>
+
+            <View style={styles.mpControls}>
+              <TouchableOpacity onPress={handlePrev}>
+                <Text style={styles.mpCtrlSm}>⏮</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSpeed}>
+                <Text style={styles.mpSpeedBtn}>{audioState.speed}x</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.mpPlayBtn} onPress={handlePlayPause}>
+                {audioState.audioLoading ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <Text style={{ fontSize: 16 }}>{audioState.isPlaying ? '⏸' : '▶️'}</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleNext}>
+                <Text style={styles.mpCtrlSm}>⏭</Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          <View style={styles.mpProgress}>
-            <View
-              style={[
-                styles.mpProgressFill,
-                { width: durationMs > 0 ? `${(positionMs / durationMs) * 100}%` : '0%' },
-              ]}
-            />
-          </View>
-          <View style={styles.mpTimeRow}>
-            <Text style={styles.mpTime}>{formatTime(positionMs)}</Text>
-            <Text style={styles.mpTime}>{formatTime(durationMs)}</Text>
-          </View>
-
-          <View style={styles.mpControls}>
-            <TouchableOpacity onPress={handlePrev}>
-              <Text style={styles.mpCtrlSm}>⏮</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSpeed}>
-              <Text style={styles.mpSpeedBtn}>{speed}x</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.mpPlayBtn} onPress={handlePlayPause}>
-              {audioLoading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <Text style={{ fontSize: 16 }}>{isPlaying ? '⏸' : '▶️'}</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleSpeed}>
-              <Text style={styles.mpSpeedBtn}>{speed}x</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleNext}>
-              <Text style={styles.mpCtrlSm}>⏭</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -272,7 +186,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundGradientTop, opacity: 0.6,
   },
   scroll: { padding: SPACING.lg, paddingTop: SPACING.md },
-
   backBtn: { marginBottom: 12 },
   backText: {
     fontFamily: FONTS.uiSemiBold, fontSize: 12, color: COLORS.primary,
@@ -285,8 +198,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.uiRegular, fontSize: 12, color: COLORS.textMuted,
     marginBottom: 18,
   },
-
-  // Legend
   legend: {
     flexDirection: 'row', gap: 16, justifyContent: 'center', marginBottom: 16,
   },
@@ -297,8 +208,6 @@ const styles = StyleSheet.create({
   },
   legendListened: { backgroundColor: COLORS.primaryLight, borderColor: COLORS.primaryMuted },
   legendPlaying: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-
-  // Chapter grid
   chapterGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20,
   },
@@ -320,8 +229,6 @@ const styles = StyleSheet.create({
   },
   chapterNumActive: { color: COLORS.white },
   chapterNumListened: { color: COLORS.primary },
-
-  // Mini player
   miniPlayer: {
     backgroundColor: COLORS.card, borderRadius: RADIUS.md,
     borderWidth: 1, borderColor: COLORS.cardBorder,
