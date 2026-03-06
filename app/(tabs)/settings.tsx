@@ -115,7 +115,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.donateBtn}
-                onPress={() => Linking.openURL('https://cash.app/$cwinland78')}
+                onPress={() => Linking.openURL('https://cash.app/$cwinland778')}
               >
                 <Text style={styles.donateBtnIcon}>💚</Text>
                 <Text style={styles.donateBtnText}>Cash App</Text>
@@ -293,7 +293,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.donateBtn}
-              onPress={() => Linking.openURL('https://cash.app/$cwinland78')}
+              onPress={() => Linking.openURL('https://cash.app/$cwinland778')}
             >
               <Text style={styles.donateBtnIcon}>💚</Text>
               <Text style={styles.donateBtnText}>Cash App</Text>
