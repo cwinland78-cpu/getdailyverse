@@ -83,17 +83,24 @@ class AudioManager {
   }
 
   private onPlaybackStatus = (status: AVPlaybackStatus) => {
-    if (status.isLoaded) {
-      this.update({
-        isLoaded: true,
-        isPlaying: status.isPlaying,
-        isBuffering: status.isBuffering || false,
-        positionMs: status.positionMillis || 0,
-        durationMs: status.durationMillis || 0,
-      });
-      if (status.didJustFinish) {
-        this.playNext();
+    if (!status.isLoaded) {
+      // Handle error state - sound failed or was unloaded
+      if ('error' in status && status.error) {
+        console.error('Playback error:', status.error);
+        this.update({ isPlaying: false, isLoaded: false, isBuffering: false });
       }
+      return;
+    }
+    this.update({
+      isLoaded: true,
+      isPlaying: status.isPlaying,
+      isBuffering: status.isBuffering || false,
+      positionMs: status.positionMillis || 0,
+      durationMs: status.durationMillis || 0,
+    });
+    if (status.didJustFinish) {
+      // Wrap in setTimeout to avoid calling during callback
+      setTimeout(() => this.playNext().catch(e => console.error('Auto-next error:', e)), 100);
     }
   };
 
@@ -141,80 +148,113 @@ class AudioManager {
         });
         markChapterListened(book, chapter);
       } else {
+        console.warn(`No audio URL for ${book} ${chapter} (${voice})`);
         this.update({ audioLoading: false });
       }
     } catch (err) {
       console.error('Error loading audio:', err);
-      this.update({ audioLoading: false });
+      // Clean up any partial sound object
+      if (this.sound) {
+        try { await this.sound.unloadAsync(); } catch (_) {}
+        this.sound = null;
+      }
+      this.update({ audioLoading: false, isPlaying: false, isLoaded: false });
     }
   }
 
   async playPause() {
     if (this.state.audioLoading) return;
 
-    if (this.sound && this.state.isPlaying) {
-      await this.sound.pauseAsync();
-      this.update({ isPlaying: false });
-      return;
-    }
+    try {
+      if (this.sound && this.state.isPlaying) {
+        await this.sound.pauseAsync();
+        this.update({ isPlaying: false });
+        return;
+      }
 
-    if (this.sound && !this.state.isPlaying && this.state.isLoaded) {
-      await this.sound.playAsync();
-      this.update({ isPlaying: true });
-      return;
-    }
+      if (this.sound && !this.state.isPlaying && this.state.isLoaded) {
+        await this.sound.playAsync();
+        this.update({ isPlaying: true });
+        return;
+      }
 
-    // No sound loaded, start playing current book/chapter
-    await this.loadAndPlay(this.state.currentBook, this.state.currentChapter);
+      // No sound loaded, start playing current book/chapter
+      await this.loadAndPlay(this.state.currentBook, this.state.currentChapter);
+    } catch (err) {
+      console.error('playPause error:', err);
+      this.update({ isPlaying: false, audioLoading: false });
+    }
   }
 
   async playNext() {
-    const bookData = BIBLE_BOOKS.find(b => b.name === this.state.currentBook);
-    if (!bookData) return;
+    try {
+      const bookData = BIBLE_BOOKS.find(b => b.name === this.state.currentBook);
+      if (!bookData) return;
 
-    if (this.state.currentChapter < bookData.chapters) {
-      await this.loadAndPlay(this.state.currentBook, this.state.currentChapter + 1);
-    } else {
-      const bookIdx = BIBLE_BOOKS.findIndex(b => b.name === this.state.currentBook);
-      if (bookIdx < BIBLE_BOOKS.length - 1) {
-        await this.loadAndPlay(BIBLE_BOOKS[bookIdx + 1].name, 1);
+      if (this.state.currentChapter < bookData.chapters) {
+        await this.loadAndPlay(this.state.currentBook, this.state.currentChapter + 1);
+      } else {
+        const bookIdx = BIBLE_BOOKS.findIndex(b => b.name === this.state.currentBook);
+        if (bookIdx < BIBLE_BOOKS.length - 1) {
+          await this.loadAndPlay(BIBLE_BOOKS[bookIdx + 1].name, 1);
+        }
       }
+    } catch (err) {
+      console.error('playNext error:', err);
+      this.update({ isPlaying: false, audioLoading: false });
     }
   }
 
   async playPrev() {
-    if (this.state.currentChapter > 1) {
-      await this.loadAndPlay(this.state.currentBook, this.state.currentChapter - 1);
-    } else {
-      const bookIdx = BIBLE_BOOKS.findIndex(b => b.name === this.state.currentBook);
-      if (bookIdx > 0) {
-        const prevBook = BIBLE_BOOKS[bookIdx - 1];
-        await this.loadAndPlay(prevBook.name, prevBook.chapters);
+    try {
+      if (this.state.currentChapter > 1) {
+        await this.loadAndPlay(this.state.currentBook, this.state.currentChapter - 1);
+      } else {
+        const bookIdx = BIBLE_BOOKS.findIndex(b => b.name === this.state.currentBook);
+        if (bookIdx > 0) {
+          const prevBook = BIBLE_BOOKS[bookIdx - 1];
+          await this.loadAndPlay(prevBook.name, prevBook.chapters);
+        }
       }
+    } catch (err) {
+      console.error('playPrev error:', err);
+      this.update({ isPlaying: false, audioLoading: false });
     }
   }
 
   async skipBack(seconds: number = 15) {
-    if (this.sound) {
-      const newPos = Math.max(0, this.state.positionMs - seconds * 1000);
-      await this.sound.setPositionAsync(newPos);
+    try {
+      if (this.sound) {
+        const newPos = Math.max(0, this.state.positionMs - seconds * 1000);
+        await this.sound.setPositionAsync(newPos);
+      }
+    } catch (err) {
+      console.error('skipBack error:', err);
     }
   }
 
   async skipForward(seconds: number = 15) {
-    if (this.sound) {
-      const newPos = Math.min(this.state.durationMs, this.state.positionMs + seconds * 1000);
-      await this.sound.setPositionAsync(newPos);
+    try {
+      if (this.sound) {
+        const newPos = Math.min(this.state.durationMs, this.state.positionMs + seconds * 1000);
+        await this.sound.setPositionAsync(newPos);
+      }
+    } catch (err) {
+      console.error('skipForward error:', err);
     }
   }
 
   async cycleSpeed() {
-    const next = getNextSpeed(this.state.speed);
-    this.update({ speed: next });
-    if (this.sound) {
-      await this.sound.setRateAsync(next, true);
+    try {
+      const next = getNextSpeed(this.state.speed);
+      this.update({ speed: next });
+      if (this.sound) {
+        await this.sound.setRateAsync(next, true);
+      }
+      saveAudioState({ playbackSpeed: next });
+    } catch (err) {
+      console.error('cycleSpeed error:', err);
     }
-    saveAudioState({ playbackSpeed: next });
   }
 
   async setVoice(voiceId: string) {

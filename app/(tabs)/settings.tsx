@@ -99,6 +99,30 @@ export default function SettingsScreen() {
           </View>
 
           {/* Links still available */}
+          <View style={styles.donateSection}>
+            <Text style={styles.donateTitle}>Support The Daily Verse</Text>
+            <Text style={styles.donateText}>
+              This app is free and always will be. Your generosity helps cover
+              SMS costs and keeps daily verses going to everyone.
+            </Text>
+            <View style={styles.donateButtons}>
+              <TouchableOpacity
+                style={styles.donateBtn}
+                onPress={() => Linking.openURL('https://paypal.me/cwinland78')}
+              >
+                <Text style={styles.donateBtnIcon}>💛</Text>
+                <Text style={styles.donateBtnText}>PayPal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.donateBtn}
+                onPress={() => Linking.openURL('https://cash.app/$cwinland78')}
+              >
+                <Text style={styles.donateBtnIcon}>💚</Text>
+                <Text style={styles.donateBtnText}>Cash App</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={styles.linksSection}>
             <TouchableOpacity
               style={styles.linkRow}
@@ -252,6 +276,31 @@ export default function SettingsScreen() {
           ))}
         </View>
 
+        {/* Support / Donate */}
+        <View style={styles.donateSection}>
+          <Text style={styles.donateTitle}>Support The Daily Verse</Text>
+          <Text style={styles.donateText}>
+            This app is free and always will be. Your generosity helps cover
+            SMS costs and keeps daily verses going to everyone.
+          </Text>
+          <View style={styles.donateButtons}>
+            <TouchableOpacity
+              style={styles.donateBtn}
+              onPress={() => Linking.openURL('https://paypal.me/cwinland78')}
+            >
+              <Text style={styles.donateBtnIcon}>💛</Text>
+              <Text style={styles.donateBtnText}>PayPal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.donateBtn}
+              onPress={() => Linking.openURL('https://cash.app/$cwinland78')}
+            >
+              <Text style={styles.donateBtnIcon}>💚</Text>
+              <Text style={styles.donateBtnText}>Cash App</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Links */}
         <View style={styles.linksSection}>
           <TouchableOpacity
@@ -381,6 +430,32 @@ const styles = StyleSheet.create({
   tzChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   tzText: { fontFamily: FONTS.uiMedium, fontSize: 13, color: COLORS.textDark },
   tzTextActive: { color: COLORS.white },
+  donateSection: {
+    backgroundColor: COLORS.card, borderRadius: RADIUS.md,
+    borderWidth: 1, borderColor: COLORS.cardBorder,
+    padding: SPACING.md, marginTop: SPACING.md, marginBottom: SPACING.md,
+  },
+  donateTitle: {
+    fontFamily: FONTS.titleSemiBold, fontSize: 16, color: COLORS.textTitle,
+    textAlign: 'center', marginBottom: 8,
+  },
+  donateText: {
+    fontFamily: FONTS.uiRegular, fontSize: 13, color: COLORS.textMuted,
+    textAlign: 'center', lineHeight: 20, marginBottom: 14,
+  },
+  donateButtons: {
+    flexDirection: 'row', gap: SPACING.sm, justifyContent: 'center',
+  },
+  donateBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, backgroundColor: COLORS.primaryLight, borderRadius: RADIUS.sm,
+    borderWidth: 1, borderColor: COLORS.primaryMuted,
+    paddingVertical: 12,
+  },
+  donateBtnIcon: { fontSize: 16 },
+  donateBtnText: {
+    fontFamily: FONTS.uiSemiBold, fontSize: 14, color: COLORS.primary,
+  },
   linksSection: {
     borderTopWidth: 1, borderTopColor: COLORS.divider,
     paddingTop: SPACING.md, marginTop: SPACING.md,
