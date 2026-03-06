@@ -10,8 +10,10 @@ export default function OnboardingScreen() {
   const router = useRouter();
 
   async function handleSkip() {
-    await setOnboarded(true);
-    router.replace('/(tabs)');
+    try {
+      await setOnboarded(true);
+      router.replace('/(tabs)');
+    } catch (e) { console.error('skip error:', e); }
   }
 
   return (

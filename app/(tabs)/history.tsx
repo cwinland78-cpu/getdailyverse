@@ -85,7 +85,15 @@ export default function HistoryScreen() {
         return;
       }
 
-      const valid = (data || []).filter((d: any) => d.verse) as SentVerse[];
+      // Supabase returns joined fields as arrays; normalize to single objects
+      const valid = (data || [])
+        .filter((d: any) => d.verse)
+        .map((d: any) => ({
+          id: d.id,
+          sent_at: d.sent_at,
+          verse: Array.isArray(d.verse) ? d.verse[0] : d.verse,
+        }))
+        .filter((d: any) => d.verse) as SentVerse[];
 
       if (valid.length < PAGE_SIZE) {
         setHasMore(false);
@@ -114,7 +122,9 @@ export default function HistoryScreen() {
   async function loadMore() {
     if (!subscriberId || loadingMore || !hasMore) return;
     setLoadingMore(true);
-    await fetchVerses(subscriberId, true);
+    try {
+      await fetchVerses(subscriberId, true);
+    } catch (e) { console.error('loadMore error:', e); }
     setLoadingMore(false);
   }
 

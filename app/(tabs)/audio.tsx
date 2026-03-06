@@ -63,33 +63,41 @@ export default function AudioScreen() {
   }
 
   async function selectVoice(voiceId: string) {
-    setSelectedVoice(voiceId);
-    await saveVoicePreference(voiceId);
-    await audioManager.setVoice(voiceId);
+    try {
+      setSelectedVoice(voiceId);
+      await saveVoicePreference(voiceId);
+      await audioManager.setVoice(voiceId);
+    } catch (e) { console.error('selectVoice error:', e); }
   }
 
   async function handlePlayPause() {
-    await audioManager.playPause();
+    try { await audioManager.playPause(); }
+    catch (e) { console.error('playPause error:', e); }
   }
 
   async function handleNext() {
-    await audioManager.playNext();
+    try { await audioManager.playNext(); }
+    catch (e) { console.error('next error:', e); }
   }
 
   async function handlePrev() {
-    await audioManager.playPrev();
+    try { await audioManager.playPrev(); }
+    catch (e) { console.error('prev error:', e); }
   }
 
   async function handleSkipBack() {
-    await audioManager.skipBack();
+    try { await audioManager.skipBack(); }
+    catch (e) { console.error('skipBack error:', e); }
   }
 
   async function handleSkipForward() {
-    await audioManager.skipForward();
+    try { await audioManager.skipForward(); }
+    catch (e) { console.error('skipForward error:', e); }
   }
 
   async function handleSpeed() {
-    await audioManager.cycleSpeed();
+    try { await audioManager.cycleSpeed(); }
+    catch (e) { console.error('cycleSpeed error:', e); }
   }
 
   function handleBookPress(bookName: string) {

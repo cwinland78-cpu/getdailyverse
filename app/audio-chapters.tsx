@@ -36,26 +36,34 @@ export default function AudioChaptersScreen() {
   }, []);
 
   async function playChapter(chapter: number) {
-    await audioManager.loadAndPlay(bookName, chapter);
-    setListened(prev => prev.includes(chapter) ? prev : [...prev, chapter]);
+    try {
+      await audioManager.loadAndPlay(bookName, chapter);
+      setListened(prev => prev.includes(chapter) ? prev : [...prev, chapter]);
+    } catch (e) { console.error('playChapter error:', e); }
   }
 
   async function handlePlayPause() {
-    await audioManager.playPause();
+    try { await audioManager.playPause(); }
+    catch (e) { console.error('playPause error:', e); }
   }
 
   async function handlePrev() {
-    const prev = Math.max(1, audioState.currentChapter - 1);
-    await audioManager.loadAndPlay(bookName, prev);
+    try {
+      const prev = Math.max(1, audioState.currentChapter - 1);
+      await audioManager.loadAndPlay(bookName, prev);
+    } catch (e) { console.error('prev error:', e); }
   }
 
   async function handleNext() {
-    const next = Math.min(totalChapters, audioState.currentChapter + 1);
-    await audioManager.loadAndPlay(bookName, next);
+    try {
+      const next = Math.min(totalChapters, audioState.currentChapter + 1);
+      await audioManager.loadAndPlay(bookName, next);
+    } catch (e) { console.error('next error:', e); }
   }
 
   async function handleSpeed() {
-    await audioManager.cycleSpeed();
+    try { await audioManager.cycleSpeed(); }
+    catch (e) { console.error('speed error:', e); }
   }
 
   const voiceData = VOICE_OPTIONS.find(v => v.id === audioState.currentVoice);

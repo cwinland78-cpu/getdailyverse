@@ -70,34 +70,38 @@ export default function TodayScreen() {
 
   async function handleShare() {
     if (!verse) return;
-    const message = `📖 ${getReference()} (KJV)\n\n"${verse.text}"\n\nSent via The Daily Verse`;
-    await Share.share({ message });
+    try {
+      const message = `📖 ${getReference()} (KJV)\n\n"${verse.text}"\n\nSent via The Daily Verse`;
+      await Share.share({ message });
+    } catch (e) { console.error('share error:', e); }
   }
 
   async function handleCopy() {
     if (!verse) return;
-    const text = `${getReference()} (KJV) - "${verse.text}"`;
-    await Clipboard.setStringAsync(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      const text = `${getReference()} (KJV) - "${verse.text}"`;
+      await Clipboard.setStringAsync(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (e) { console.error('copy error:', e); }
   }
 
   async function handlePlayPause() {
     if (!verse) return;
-
-    // If nothing is loaded or different chapter, load this verse's chapter
-    if (!audioState.isLoaded ||
-        audioState.currentBook !== verse.book ||
-        audioState.currentChapter !== verse.chapter) {
-      await audioManager.loadAndPlay(verse.book, verse.chapter);
-      return;
-    }
-
-    await audioManager.playPause();
+    try {
+      if (!audioState.isLoaded ||
+          audioState.currentBook !== verse.book ||
+          audioState.currentChapter !== verse.chapter) {
+        await audioManager.loadAndPlay(verse.book, verse.chapter);
+        return;
+      }
+      await audioManager.playPause();
+    } catch (e) { console.error('playPause error:', e); }
   }
 
   async function handleSpeed() {
-    await audioManager.cycleSpeed();
+    try { await audioManager.cycleSpeed(); }
+    catch (e) { console.error('speed error:', e); }
   }
 
   const today = new Date().toLocaleDateString('en-US', {

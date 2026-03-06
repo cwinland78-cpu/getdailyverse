@@ -6,7 +6,7 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS, TIMEZONES } from '../../src/constants/theme';
-import { getSubscriber, saveSubscriber, clearSubscriber, SubscriberData } from '../../src/utils/storage';
+import { getSubscriber, saveSubscriber, clearSubscriber, setOnboarded, SubscriberData } from '../../src/utils/storage';
 import { updatePreferences, deleteAccount } from '../../src/utils/supabase';
 import { formatDeliveryTime } from '../../src/utils/bible';
 
@@ -37,7 +37,6 @@ export default function SettingsScreen() {
       const result = await deleteAccount(subscriber.phone);
       if (result.success) {
         await clearSubscriber();
-        const { setOnboarded } = await import('../../src/utils/storage');
         await setOnboarded(false);
         router.replace('/onboarding');
       } else {
