@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS, SHADOWS } from '../../src/constants/theme';
-import { getSubscriber } from '../../src/utils/storage';
+import { getSubscriber, saveSubscriber } from '../../src/utils/storage';
 import { supabase } from '../../src/utils/supabase';
 
 interface SentVerse {
@@ -44,8 +44,29 @@ export default function HistoryScreen() {
         setLoading(false);
         return;
       }
-      setSubscriberId(sub.id);
-      await fetchVerses(sub.id, false);
+
+      // Look up the real subscriber_id from the database by phone
+      // Local storage may have a stale ID from an earlier signup attempt
+      let subId = sub.id;
+      try {
+        const { data: dbSub } = await supabase
+          .from('subscribers')
+          .select('id')
+          .eq('phone', sub.phone)
+          .single();
+        if (dbSub && dbSub.id) {
+          subId = dbSub.id;
+          // Update local storage if it was stale
+          if (subId !== sub.id) {
+            await saveSubscriber({ ...sub, id: subId });
+          }
+        }
+      } catch (_) {
+        // Fall back to local ID if lookup fails
+      }
+
+      setSubscriberId(subId);
+      await fetchVerses(subId, false);
     } catch (e) {
       console.error('Error loading history:', e);
       setError('Could not load history. Pull down to retry.');
