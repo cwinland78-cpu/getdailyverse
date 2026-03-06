@@ -22,7 +22,11 @@ export default function PreferencesScreen() {
   const [timezone, setTimezone] = useState('America/New_York');
   const [loading, setLoading] = useState(false);
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  // Generate 30-min time slots: 0:00, 0:30, 1:00, 1:30, ... 23:30
+  const timeSlots = Array.from({ length: 48 }, (_, i) => ({
+    hour: Math.floor(i / 2),
+    minute: (i % 2) * 30,
+  }));
 
   async function handleSave() {
     setLoading(true);
@@ -153,17 +157,20 @@ export default function PreferencesScreen() {
         {/* Delivery Time (original) */}
         <Text style={styles.sectionLabel}>DELIVERY TIME</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
-          {hours.map((h) => (
-            <TouchableOpacity
-              key={h}
-              style={[styles.timeChip, hour === h && styles.timeChipActive]}
-              onPress={() => setHour(h)}
-            >
-              <Text style={[styles.timeChipText, hour === h && styles.timeChipTextActive]}>
-                {formatDeliveryTime(h)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {timeSlots.map((slot) => {
+            const isActive = hour === slot.hour && minute === slot.minute;
+            return (
+              <TouchableOpacity
+                key={`${slot.hour}-${slot.minute}`}
+                style={[styles.timeChip, isActive && styles.timeChipActive]}
+                onPress={() => { setHour(slot.hour); setMinute(slot.minute); }}
+              >
+                <Text style={[styles.timeChipText, isActive && styles.timeChipTextActive]}>
+                  {formatDeliveryTime(slot.hour, slot.minute)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Timezone */}

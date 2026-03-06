@@ -247,17 +247,42 @@ export default function SettingsScreen() {
         {/* Delivery Time */}
         <Text style={styles.sectionLabel}>DELIVERY TIME</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeScroll}>
-          {Array.from({ length: 24 }, (_, i) => i).map((h) => (
-            <TouchableOpacity
-              key={h}
-              style={[styles.timeChip, subscriber.delivery_hour === h && styles.timeChipActive]}
-              onPress={() => updateField('delivery_hour', h)}
-            >
-              <Text style={[styles.timeText, subscriber.delivery_hour === h && styles.timeTextActive]}>
-                {formatDeliveryTime(h)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {Array.from({ length: 48 }, (_, i) => ({
+            h: Math.floor(i / 2),
+            m: (i % 2) * 30,
+          })).map((slot) => {
+            const isActive = subscriber.delivery_hour === slot.h && subscriber.delivery_minute === slot.m;
+            return (
+              <TouchableOpacity
+                key={`${slot.h}-${slot.m}`}
+                style={[styles.timeChip, isActive && styles.timeChipActive]}
+                onPress={async () => {
+                  if (!subscriber || loading) return;
+                  setLoading(true);
+                  try {
+                    const result = await updatePreferences(subscriber.phone, {
+                      delivery_hour: slot.h,
+                      delivery_minute: slot.m,
+                    });
+                    if (result.success) {
+                      const updated = { ...subscriber, delivery_hour: slot.h, delivery_minute: slot.m };
+                      setSubscriber(updated);
+                      await saveSubscriber(updated);
+                    } else {
+                      Alert.alert('Error', 'Failed to update. Please try again.');
+                    }
+                  } catch {
+                    Alert.alert('Error', 'Something went wrong.');
+                  }
+                  setLoading(false);
+                }}
+              >
+                <Text style={[styles.timeText, isActive && styles.timeTextActive]}>
+                  {formatDeliveryTime(slot.h, slot.m)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Timezone */}
