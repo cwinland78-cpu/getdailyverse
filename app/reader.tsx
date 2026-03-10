@@ -58,7 +58,7 @@ export default function ReaderScreen() {
 
   async function handleShareVerse(v: Verse) {
     const ref = `${v.book} ${v.chapter}:${v.verse}`;
-    const message = `📖 ${ref} (KJV)\n\n"${v.text}"\n\nSent via The Daily Verse`;
+    const message = `📖 ${ref} (KJV)\n\n"${v.text}"\n\nSent via Get Daily Verse`;
     await Share.share({ message });
   }
 
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   chapterChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
   chapterNum: { fontFamily: FONTS.uiMedium, fontSize: 13, color: COLORS.textDark },
   chapterNumActive: { color: COLORS.white },
-  versesContainer: { padding: SPACING.lg, paddingBottom: 100 },
+  versesContainer: { padding: SPACING.lg, paddingBottom: 100, maxWidth: 600, width: '100%', alignSelf: 'center' as const },
   loadingWrap: { height: 300, justifyContent: 'center', alignItems: 'center' },
   verseLine: {
     flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4,

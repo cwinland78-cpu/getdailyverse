@@ -1,4 +1,4 @@
-// Design system for The Daily Verse
+// Design system for Get Daily Verse
 // Warm earth tones + Cinzel title font
 
 export const COLORS = {

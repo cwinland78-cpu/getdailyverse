@@ -4,7 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SPACING, RADIUS } from '../src/constants/theme';
 import { setOnboarded } from '../src/utils/storage';
 
-const { width } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
+const width = Math.min(screenWidth, 600);
 
 export default function OnboardingScreen() {
   const router = useRouter();

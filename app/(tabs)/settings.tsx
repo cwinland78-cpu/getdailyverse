@@ -99,7 +99,7 @@ export default function SettingsScreen() {
 
           {/* Links still available */}
           <View style={styles.donateSection}>
-            <Text style={styles.donateTitle}>Support The Daily Verse</Text>
+            <Text style={styles.donateTitle}>Support Get Daily Verse</Text>
             <Text style={styles.donateText}>
               This app is free and always will be. Your generosity helps cover
               SMS costs and keeps daily verses going to everyone.
@@ -153,7 +153,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.version}>The Daily Verse v1.0.0</Text>
+          <Text style={styles.version}>Get Daily Verse v1.1.0</Text>
         </ScrollView>
       </SafeAreaView>
     );
@@ -302,7 +302,7 @@ export default function SettingsScreen() {
 
         {/* Support / Donate */}
         <View style={styles.donateSection}>
-          <Text style={styles.donateTitle}>Support The Daily Verse</Text>
+          <Text style={styles.donateTitle}>Support Get Daily Verse</Text>
           <Text style={styles.donateText}>
             This app is free and always will be. Your generosity helps cover
             SMS costs and keeps daily verses going to everyone.
@@ -385,7 +385,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Text style={styles.version}>The Daily Verse v1.0.0</Text>
+        <Text style={styles.version}>Get Daily Verse v1.1.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.backgroundGradientTop, opacity: 0.5,
   },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scroll: { padding: SPACING.lg, paddingTop: SPACING.xl },
+  scroll: { padding: SPACING.lg, paddingTop: SPACING.xl, maxWidth: 600, width: '100%', alignSelf: 'center' as const },
   title: {
     fontFamily: FONTS.titleSemiBold, fontSize: 24, color: COLORS.textTitle,
     letterSpacing: 0.8, marginBottom: 4,

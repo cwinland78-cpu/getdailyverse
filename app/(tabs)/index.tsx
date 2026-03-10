@@ -71,7 +71,7 @@ export default function TodayScreen() {
   async function handleShare() {
     if (!verse) return;
     try {
-      const message = `📖 ${getReference()} (KJV)\n\n"${verse.text}"\n\nSent via The Daily Verse`;
+      const message = `📖 ${getReference()} (KJV)\n\n"${verse.text}"\n\nSent via Get Daily Verse`;
       await Share.share({ message });
     } catch (e) { console.error('share error:', e); }
   }
@@ -115,7 +115,7 @@ export default function TodayScreen() {
       <View style={styles.gradientTop} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={styles.date}>{today}</Text>
-        <Text style={styles.title}>The Daily Verse</Text>
+        <Text style={styles.title}>Get Daily Verse</Text>
 
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, height: 180,
     backgroundColor: COLORS.backgroundGradientTop, opacity: 0.6,
   },
-  scroll: { padding: SPACING.lg, paddingTop: SPACING.xl },
+  scroll: { padding: SPACING.lg, paddingTop: SPACING.xl, maxWidth: 600, width: '100%', alignSelf: 'center' as const },
   date: {
     fontFamily: FONTS.uiMedium, fontSize: 12, color: COLORS.textMuted,
     letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4,

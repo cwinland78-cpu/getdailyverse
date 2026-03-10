@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, height: 160,
     backgroundColor: COLORS.backgroundGradientTop, opacity: 0.5,
   },
-  scroll: { padding: SPACING.lg, paddingTop: SPACING.xxl },
+  scroll: { padding: SPACING.lg, paddingTop: SPACING.xxl, maxWidth: 600, width: '100%', alignSelf: 'center' as const },
   title: {
     fontFamily: FONTS.titleSemiBold, fontSize: 26, color: COLORS.textTitle,
     letterSpacing: 0.5, marginBottom: SPACING.xs,

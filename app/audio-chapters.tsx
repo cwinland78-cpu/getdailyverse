@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     position: 'absolute', top: 0, left: 0, right: 0, height: 180,
     backgroundColor: COLORS.backgroundGradientTop, opacity: 0.6,
   },
-  scroll: { padding: SPACING.lg, paddingTop: SPACING.md },
+  scroll: { padding: SPACING.lg, paddingTop: SPACING.md, maxWidth: 600, width: '100%', alignSelf: 'center' as const },
   backBtn: { marginBottom: 12 },
   backText: {
     fontFamily: FONTS.uiSemiBold, fontSize: 12, color: COLORS.primary,
