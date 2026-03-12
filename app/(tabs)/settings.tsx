@@ -153,7 +153,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.version}>Get Daily Verse v1.1.0</Text>
+          <Text style={styles.version}>Get Daily Verse v1.2.0</Text>
         </ScrollView>
       </SafeAreaView>
     );
@@ -385,7 +385,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Text style={styles.version}>Get Daily Verse v1.1.0</Text>
+        <Text style={styles.version}>Get Daily Verse v1.2.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
