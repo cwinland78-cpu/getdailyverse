@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 import { COLORS, FONTS, SPACING, RADIUS, TIMEZONES } from '../../src/constants/theme';
 import { getSubscriber, saveSubscriber, clearSubscriber, setOnboarded, SubscriberData } from '../../src/utils/storage';
 import { updatePreferences, deleteAccount } from '../../src/utils/supabase';
@@ -107,14 +108,14 @@ export default function SettingsScreen() {
             <View style={styles.donateButtons}>
               <TouchableOpacity
                 style={styles.donateBtn}
-                onPress={() => Linking.openURL('https://paypal.me/cwinland78')}
+                onPress={() => WebBrowser.openBrowserAsync('https://paypal.me/cwinland78')}
               >
                 <Text style={styles.donateBtnIcon}>💛</Text>
                 <Text style={styles.donateBtnText}>PayPal</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.donateBtn}
-                onPress={() => Linking.openURL('https://cash.app/$cwinland778')}
+                onPress={() => WebBrowser.openBrowserAsync('https://cash.app/$cwinland778')}
               >
                 <Text style={styles.donateBtnIcon}>💚</Text>
                 <Text style={styles.donateBtnText}>Cash App</Text>
@@ -153,7 +154,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.version}>Get Daily Verse v1.2.0</Text>
+          <Text style={styles.version}>Get Daily Verse v1.2.1</Text>
         </ScrollView>
       </SafeAreaView>
     );
@@ -310,14 +311,14 @@ export default function SettingsScreen() {
           <View style={styles.donateButtons}>
             <TouchableOpacity
               style={styles.donateBtn}
-              onPress={() => Linking.openURL('https://paypal.me/cwinland78')}
+              onPress={() => WebBrowser.openBrowserAsync('https://paypal.me/cwinland78')}
             >
               <Text style={styles.donateBtnIcon}>💛</Text>
               <Text style={styles.donateBtnText}>PayPal</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.donateBtn}
-              onPress={() => Linking.openURL('https://cash.app/$cwinland778')}
+              onPress={() => WebBrowser.openBrowserAsync('https://cash.app/$cwinland778')}
             >
               <Text style={styles.donateBtnIcon}>💚</Text>
               <Text style={styles.donateBtnText}>Cash App</Text>
@@ -385,7 +386,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        <Text style={styles.version}>Get Daily Verse v1.2.0</Text>
+        <Text style={styles.version}>Get Daily Verse v1.2.1</Text>
       </ScrollView>
     </SafeAreaView>
   );
