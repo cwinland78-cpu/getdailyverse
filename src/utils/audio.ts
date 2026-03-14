@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Bible Brain API config
 const BIBLE_BRAIN_API = 'https://4.dbt.io/api';
-const API_KEY = 'dbce0e77-6c45-4d66-b59c-38a253acacdc';
+const API_KEY = process.env.EXPO_PUBLIC_BIBLE_BRAIN_API_KEY || '';
 
 // KJV Audio filesets from Bible Brain
 // Bible Brain splits audio into OT and NT filesets.
